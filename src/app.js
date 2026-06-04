@@ -6,6 +6,14 @@ const storage = createStorage("astranov-chatgpt");
 const sessionId = getSessionId();
 
 const els = {
+  body: document.body,
+  cosmos: document.getElementById("cosmos"),
+  orbLayer: document.getElementById("orb-layer"),
+  drawer: document.getElementById("drawer"),
+  drawerTitle: document.getElementById("drawer-title"),
+  drawerEyebrow: document.getElementById("drawer-eyebrow"),
+  drawerClose: document.getElementById("drawer-close"),
+  trayTrigger: document.getElementById("tray-trigger"),
   messages: document.getElementById("messages"),
   form: document.getElementById("composer"),
   input: document.getElementById("prompt-input"),
@@ -14,11 +22,42 @@ const els = {
   locate: document.getElementById("locate-button"),
   brand: document.getElementById("brand-button"),
   status: document.getElementById("status-line"),
-  providerLock: document.getElementById("provider-lock")
+  providerLock: document.getElementById("provider-lock"),
+  modeLine: document.getElementById("mode-line"),
+  memoryLine: document.getElementById("memory-line"),
+  cic: document.getElementById("cic-float"),
+  cicLabel: document.getElementById("cic-label"),
+  back: document.getElementById("back-button"),
+  materialize: document.getElementById("materialize-button"),
+  dematerialize: document.getElementById("dematerialize-button")
 };
 
+const panelTitles = {
+  chat: ["AI in context", "AstranoV ChatGPT"],
+  status: ["Collective signal", "System State"],
+  actions: ["Manual foundation", "Visible Controls"]
+};
+
+const seedOrbs = [
+  { id: "astranov", label: "Astranov", glyph: "AV", color: "#54e6ff", ring: "inner", angle: -90, use: "hi", panel: "chat" },
+  { id: "aicycle", label: "AI Cycle", glyph: "AI", color: "#6df2bd", ring: "inner", angle: 22, use: "hi", panel: "status" },
+  { id: "me", label: "Me", glyph: "ME", color: "#ffd166", ring: "inner", angle: 150, use: "lo", panel: "status" },
+  { id: "discover", label: "Discover", glyph: "DS", color: "#ff6b9a", ring: "middle", angle: -22, use: "hi", panel: "actions" },
+  { id: "pilot", label: "Pilot", glyph: "PL", color: "#8fb7ff", ring: "middle", angle: 58, use: "lo", panel: "actions" },
+  { id: "wallet", label: "Wallet", glyph: "AVC", color: "#6df2bd", ring: "middle", angle: 135, use: "lo", panel: "status" },
+  { id: "news", label: "News", glyph: "NW", color: "#ffd166", ring: "outer", angle: -132, use: "lo", panel: "chat" },
+  { id: "work", label: "Work", glyph: "WK", color: "#54e6ff", ring: "outer", angle: 130, use: "lo", panel: "chat" }
+];
+
+const ringRadii = { inner: 0.185, middle: 0.295, outer: 0.405 };
+const orbState = new Map();
 let messages = loadMessages();
 let pending = false;
+let drawerTimer = 0;
+let introTimer = 0;
+let currentProviderIndex = 0;
+let depth = 0;
+let dynamicOrbId = 0;
 
 boot();
 
@@ -27,22 +66,228 @@ function boot() {
     messages = [
       {
         role: "assistant",
-        content: "I am online locally. When the AstranoV router is reachable, this channel locks to the OpenAI mini route.",
-        meta: "local"
+        content: "I am AstranoV on the ChatGPT route. The globe is the surface; ask, and I will materialise the useful orb or control.",
+        meta: "local boot"
       }
     ];
   }
 
-  render();
-  updateStatus(api.isConfigured() ? "Router configured" : "Local fallback only");
+  renderMessages();
+  updateStatus(api.isConfigured() ? "ROUTER READY" : "LOCAL FALLBACK");
   autosize();
+  bindEvents();
+  exposeOrbApi();
+  runIntroSequence();
+  window.addEventListener("resize", layoutOrbs);
+}
 
+function bindEvents() {
   els.form.addEventListener("submit", onSubmit);
   els.input.addEventListener("input", autosize);
   els.clear.addEventListener("click", clearHistory);
   els.locate.addEventListener("click", acquireLocation);
-  els.brand.addEventListener("click", resetSession);
+  els.brand.addEventListener("click", healAndReload);
+  els.drawerClose.addEventListener("click", closeDrawer);
+  els.trayTrigger.addEventListener("click", () => openDrawer("chat"));
+  els.cic.addEventListener("click", cycleProvider);
+  els.back.addEventListener("click", goBack);
+  els.materialize.addEventListener("click", () => {
+    const id = `user-${++dynamicOrbId}`;
+    materializeOrb({ id, label: "Made", glyph: "MA", color: "#cde7ff", ring: "outer", source: "manual", panel: "chat", ttl: 18000 });
+    addMessage({ role: "assistant", content: "Materialised a temporary orb from the planet.", meta: "manual affordance" });
+  });
+  els.dematerialize.addEventListener("click", () => {
+    const last = [...orbState.keys()].reverse().find((id) => id.startsWith("user-"));
+    if (last) dematerializeOrb(last);
+  });
   document.addEventListener("change", onProviderChange);
+  document.addEventListener("keydown", (event) => {
+    if (event.key === "Escape") closeDrawer();
+  });
+  addBottomSwipe();
+}
+
+function runIntroSequence() {
+  clearTimeout(introTimer);
+  seedOrbs.forEach((orb, index) => {
+    introTimer = window.setTimeout(() => materializeOrb(orb), 260 + index * 170);
+  });
+  window.setTimeout(() => openDrawer("chat", 3200), 900);
+}
+
+function materializeOrb(input) {
+  if (!input?.id) return null;
+  const existing = orbState.get(input.id);
+  const orb = existing?.element || document.createElement("button");
+  const state = {
+    id: input.id,
+    label: input.label || input.id,
+    glyph: input.glyph || input.label?.slice(0, 2).toUpperCase() || "AV",
+    color: input.color || "#54e6ff",
+    ring: input.ring || "middle",
+    angle: Number.isFinite(input.angle) ? input.angle : Math.random() * 360,
+    use: input.use || "lo",
+    panel: input.panel || "chat",
+    x: existing?.x,
+    y: existing?.y,
+    vx: 0,
+    vy: 0,
+    element: orb
+  };
+
+  orb.className = "orb";
+  orb.type = "button";
+  orb.dataset.id = state.id;
+  orb.dataset.use = state.use;
+  orb.style.setProperty("--orb-color", state.color);
+  orb.style.setProperty("--orb-size", state.glyph.length > 2 ? "82px" : "74px");
+  orb.setAttribute("aria-label", state.label);
+  orb.innerHTML = `<span class="orb-glyph">${escapeHtml(state.glyph)}</span><span class="orb-label">${escapeHtml(state.label)}</span>`;
+
+  if (!existing) {
+    els.orbLayer.append(orb);
+    orb.addEventListener("click", (event) => {
+      if (orb.classList.contains("is-dragging")) return;
+      event.stopPropagation();
+      openOrb(state.id);
+    });
+    makeThrowableOrb(state);
+  }
+
+  orbState.set(state.id, state);
+  layoutOrbs();
+
+  if (input.ttl) {
+    window.setTimeout(() => dematerializeOrb(state.id), input.ttl);
+  }
+  return state;
+}
+
+function dematerializeOrb(id) {
+  const state = orbState.get(id);
+  if (!state) return;
+  state.element.style.opacity = "0";
+  state.element.style.scale = "0.7";
+  window.setTimeout(() => state.element.remove(), 220);
+  orbState.delete(id);
+}
+
+function layoutOrbs() {
+  const rect = els.cosmos.getBoundingClientRect();
+  const cx = rect.width / 2;
+  const cy = rect.height / 2;
+  const base = Math.min(rect.width, rect.height);
+
+  for (const state of orbState.values()) {
+    if (!Number.isFinite(state.x) || !Number.isFinite(state.y)) {
+      const radius = base * (ringRadii[state.ring] || ringRadii.middle);
+      const angle = (state.angle * Math.PI) / 180;
+      state.x = cx + Math.cos(angle) * radius;
+      state.y = cy + Math.sin(angle) * radius;
+    }
+    placeOrb(state);
+  }
+}
+
+function placeOrb(state) {
+  state.element.style.left = `${state.x}px`;
+  state.element.style.top = `${state.y}px`;
+}
+
+function openOrb(id) {
+  const state = orbState.get(id);
+  if (!state) return;
+  depth = 1;
+  els.body.classList.add("has-depth");
+  showDial(state);
+  openDrawer(state.panel || "chat");
+}
+
+function showDial(state) {
+  document.querySelectorAll(".orb-dial").forEach((dial) => dial.remove());
+  const dial = document.createElement("div");
+  dial.className = "orb-dial visible";
+  dial.style.left = `${state.x}px`;
+  dial.style.top = `${state.y}px`;
+
+  for (let i = 0; i < 5; i += 1) {
+    const dot = document.createElement("span");
+    const angle = ((i / 5) * Math.PI * 2) - Math.PI / 2;
+    dot.style.transform = `translate(${Math.cos(angle) * 58 - 5}px, ${Math.sin(angle) * 58 - 5}px)`;
+    dial.append(dot);
+  }
+
+  els.orbLayer.append(dial);
+  window.setTimeout(() => dial.remove(), 2600);
+}
+
+function makeThrowableOrb(state) {
+  let pointerId = null;
+  let startX = 0;
+  let startY = 0;
+  let lastX = 0;
+  let lastY = 0;
+  let lastT = 0;
+  let moved = false;
+
+  state.element.addEventListener("pointerdown", (event) => {
+    pointerId = event.pointerId;
+    moved = false;
+    startX = lastX = event.clientX;
+    startY = lastY = event.clientY;
+    lastT = performance.now();
+    state.vx = 0;
+    state.vy = 0;
+    state.element.setPointerCapture(pointerId);
+  });
+
+  state.element.addEventListener("pointermove", (event) => {
+    if (event.pointerId !== pointerId) return;
+    const now = performance.now();
+    const dx = event.clientX - lastX;
+    const dy = event.clientY - lastY;
+    const dt = Math.max(16, now - lastT);
+    state.x += dx;
+    state.y += dy;
+    state.vx = (dx / dt) * 16;
+    state.vy = (dy / dt) * 16;
+    lastX = event.clientX;
+    lastY = event.clientY;
+    lastT = now;
+    moved = moved || Math.hypot(event.clientX - startX, event.clientY - startY) > 6;
+    state.element.classList.toggle("is-dragging", moved);
+    placeOrb(state);
+  });
+
+  state.element.addEventListener("pointerup", (event) => {
+    if (event.pointerId !== pointerId) return;
+    pointerId = null;
+    state.element.releasePointerCapture(event.pointerId);
+    if (moved) {
+      fling(state);
+      window.setTimeout(() => state.element.classList.remove("is-dragging"), 80);
+    }
+  });
+}
+
+function fling(state) {
+  const step = () => {
+    const rect = els.cosmos.getBoundingClientRect();
+    const size = state.element.offsetWidth || 74;
+    state.x += state.vx;
+    state.y += state.vy;
+    state.vx *= 0.92;
+    state.vy *= 0.92;
+
+    if (state.x < size / 2 || state.x > rect.width - size / 2) state.vx *= -0.72;
+    if (state.y < size / 2 || state.y > rect.height - size / 2) state.vy *= -0.72;
+    state.x = clamp(state.x, size / 2, rect.width - size / 2);
+    state.y = clamp(state.y, size / 2, rect.height - size / 2);
+    placeOrb(state);
+
+    if (Math.hypot(state.vx, state.vy) > 0.22) requestAnimationFrame(step);
+  };
+  requestAnimationFrame(step);
 }
 
 async function onSubmit(event) {
@@ -55,44 +300,51 @@ async function onSubmit(event) {
   els.input.value = "";
   autosize();
   addMessage({ role: "user", content: prompt });
+  openDrawer("chat", 7000);
+  maybeMaterializeFromPrompt(prompt);
   await askRouter(prompt);
 }
 
 async function askRouter(prompt) {
   pending = true;
   setBusy(true);
-  updateStatus("Transmitting to AstranoV");
+  updateStatus("TRANSMITTING");
 
   const provider = getProvider();
   try {
     const result = await api.ask({ prompt, messages, sessionId, provider });
-    const meta = [
-      result.provider || provider,
-      result.model,
-      result.latencyMs ? `${result.latencyMs}ms` : ""
-    ].filter(Boolean).join(" / ");
+    const meta = [result.provider || provider, result.model, result.latencyMs ? `${result.latencyMs}ms` : ""].filter(Boolean).join(" / ");
 
-    addMessage({
-      role: "assistant",
-      content: result.text,
-      meta: meta || "router",
-      action: result.action
-    });
-    updateStatus("Router response received");
+    addMessage({ role: "assistant", content: result.text, meta: meta || "router", action: result.action });
+    applyRouterAction(result.action);
+    updateStatus("ROUTER RESPONSE");
   } catch (error) {
-    addMessage({
-      role: "assistant",
-      content: offlineReply(prompt, error),
-      meta: "local fallback"
-    });
-    updateStatus("Router unreachable, local fallback used");
+    addMessage({ role: "assistant", content: offlineReply(prompt, error), meta: "local fallback" });
+    updateStatus("LOCAL FALLBACK");
   } finally {
     pending = false;
     setBusy(false);
   }
 }
 
-function render() {
+function maybeMaterializeFromPrompt(prompt) {
+  const lower = prompt.toLowerCase();
+  if (lower.includes("news")) materializeOrb({ id: "news", label: "News", glyph: "NW", color: "#ffd166", ring: "outer", panel: "chat", use: "hi" });
+  if (lower.includes("wallet") || lower.includes("avc")) materializeOrb({ id: "wallet", label: "Wallet", glyph: "AVC", color: "#6df2bd", ring: "middle", panel: "status", use: "hi" });
+  if (lower.includes("route") || lower.includes("drive") || lower.includes("pilot")) materializeOrb({ id: "pilot", label: "Pilot", glyph: "PL", color: "#8fb7ff", ring: "middle", panel: "actions", use: "hi" });
+}
+
+function applyRouterAction(action) {
+  if (!action || typeof action !== "object") return;
+  const target = action.orb || action.affordance || action.panel;
+  if (typeof target === "string" && target.startsWith("#")) {
+    document.querySelector(target)?.classList.add("activated");
+  }
+  if (action.panel) openDrawer(action.panel);
+  if (action.orb) materializeOrb({ id: action.orb, label: action.orb, glyph: action.orb.slice(0, 2).toUpperCase(), ring: "outer", color: "#cde7ff", panel: action.panel || "chat" });
+}
+
+function renderMessages() {
   els.messages.innerHTML = "";
   for (const message of messages) {
     const row = document.createElement("article");
@@ -128,13 +380,10 @@ function render() {
 }
 
 function addMessage(message) {
-  messages.push({
-    ...message,
-    createdAt: new Date().toISOString()
-  });
+  messages.push({ ...message, createdAt: new Date().toISOString() });
   messages = messages.slice(-60);
   storage.set("messages", JSON.stringify(messages));
-  render();
+  renderMessages();
 }
 
 function loadMessages() {
@@ -148,65 +397,121 @@ function loadMessages() {
 function clearHistory() {
   messages = [];
   storage.remove("messages");
-  addMessage({
-    role: "assistant",
-    content: "History cleared. The channel is clean.",
-    meta: "local"
-  });
+  addMessage({ role: "assistant", content: "History cleared. The channel is clean.", meta: "manual affordance" });
+  openDrawer("chat");
 }
 
-function resetSession() {
+function healAndReload() {
+  const diagnostic = {
+    at: new Date().toISOString(),
+    source: config.source || "astranov.eu-chatgpt",
+    route: location.href,
+    userAgent: navigator.userAgent,
+    messages: messages.length,
+    orbs: [...orbState.keys()],
+    status: els.status.textContent
+  };
+  storage.set("lastDiagnostic", JSON.stringify(diagnostic));
   storage.remove("messages");
   storage.remove("sessionId");
-  window.location.reload();
+  if (navigator.serviceWorker) {
+    navigator.serviceWorker.getRegistrations().then((items) => Promise.all(items.map((item) => item.unregister()))).finally(() => location.reload());
+  } else {
+    location.reload();
+  }
 }
 
 function acquireLocation() {
   if (!navigator.geolocation) {
-    addMessage({
-      role: "assistant",
-      content: "Location is not available in this browser.",
-      meta: "local"
-    });
+    addMessage({ role: "assistant", content: "Location is not available in this browser.", meta: "local" });
     return;
   }
 
-  updateStatus("Acquiring location");
+  updateStatus("LOCATING");
   navigator.geolocation.getCurrentPosition(
     (position) => {
       const lat = position.coords.latitude.toFixed(5);
       const lng = position.coords.longitude.toFixed(5);
-      addMessage({
-        role: "user",
-        content: `Location acquired: ${lat}, ${lng}`
-      });
-      updateStatus("Location acquired");
+      materializeOrb({ id: "pilot", label: "Pilot", glyph: "PL", color: "#8fb7ff", ring: "middle", panel: "actions", use: "hi" });
+      addMessage({ role: "user", content: `Location acquired: ${lat}, ${lng}` });
+      updateStatus("LOCATION READY");
+      openDrawer("chat");
     },
     (error) => {
-      addMessage({
-        role: "assistant",
-        content: `Location blocked: ${error.message}`,
-        meta: "local"
-      });
-      updateStatus("Location blocked");
+      addMessage({ role: "assistant", content: `Location blocked: ${error.message}`, meta: "local" });
+      updateStatus("LOCATION BLOCKED");
     },
     { enableHighAccuracy: false, timeout: 10000, maximumAge: 60000 }
   );
 }
 
+function cycleProvider() {
+  const providers = ["openai-mini", "astranov"];
+  currentProviderIndex = (currentProviderIndex + 1) % providers.length;
+  const provider = providers[currentProviderIndex];
+  const input = els.form.querySelector(`input[name="provider"][value="${provider}"]`);
+  if (input) input.checked = true;
+  onProviderChange();
+  openDrawer("status", 3500);
+}
+
 function onProviderChange() {
   const provider = getProvider();
-  els.providerLock.textContent = provider === "astranov" ? "ASTRANOV CYCLE" : "OPENAI MINI";
+  const label = provider === "astranov" ? "ASTRANOV CYCLE" : "OPENAI MINI";
+  els.providerLock.textContent = label;
+  els.cicLabel.textContent = provider === "astranov" ? "AV" : "AI";
 }
 
 function getProvider() {
   return new FormData(els.form).get("provider") || config.preferredProvider || "openai-mini";
 }
 
+function openDrawer(panel = "chat", autoCloseMs = 5000) {
+  showPanel(panel);
+  els.drawer.classList.add("open");
+  els.drawer.setAttribute("aria-hidden", "false");
+  clearTimeout(drawerTimer);
+  if (autoCloseMs) drawerTimer = window.setTimeout(closeDrawer, autoCloseMs);
+}
+
+function closeDrawer() {
+  clearTimeout(drawerTimer);
+  els.drawer.classList.remove("open");
+  els.drawer.setAttribute("aria-hidden", "true");
+}
+
+function showPanel(panel) {
+  document.querySelectorAll(".drawer-section").forEach((section) => {
+    section.classList.toggle("active", section.dataset.panel === panel);
+  });
+  const [eyebrow, title] = panelTitles[panel] || panelTitles.chat;
+  els.drawerEyebrow.textContent = eyebrow;
+  els.drawerTitle.textContent = title;
+}
+
+function goBack() {
+  depth = 0;
+  els.body.classList.remove("has-depth");
+  closeDrawer();
+  document.querySelectorAll(".orb-dial").forEach((dial) => dial.remove());
+}
+
+function addBottomSwipe() {
+  let startY = 0;
+  window.addEventListener("pointerdown", (event) => {
+    startY = event.clientY;
+  }, { passive: true });
+  window.addEventListener("pointerup", (event) => {
+    const fromBottom = startY > window.innerHeight - 70;
+    const swipedUp = startY - event.clientY > 36;
+    if (fromBottom && swipedUp) openDrawer("chat");
+  }, { passive: true });
+}
+
 function setBusy(value) {
   els.send.disabled = value;
   els.input.disabled = value;
-  document.body.classList.toggle("is-thinking", value);
+  els.body.classList.toggle("is-thinking", value);
 }
 
 function updateStatus(text) {
@@ -222,8 +527,8 @@ function getSessionId() {
   const existing = storage.get("sessionId");
   if (existing) return existing;
 
-  const id = crypto.randomUUID
-    ? crypto.randomUUID()
+  const id = window.crypto?.randomUUID
+    ? window.crypto.randomUUID()
     : `session-${Date.now()}-${Math.random().toString(16).slice(2)}`;
   storage.set("sessionId", id);
   return id;
@@ -264,5 +569,28 @@ function createStorage(prefix) {
 function offlineReply(prompt, error) {
   const cleanPrompt = prompt.replace(/\s+/g, " ").slice(0, 220);
   const reason = error?.message ? ` Router note: ${error.message}` : "";
-  return `I could not reach the live router, so I stored the turn locally. Next move: keep the request short and actionable, then retry when the connection is back. Current request: "${cleanPrompt}".${reason}`;
+  return `I could not reach the live router, so I kept the turn local and left the manual controls visible. Current request: "${cleanPrompt}".${reason}`;
+}
+
+function exposeOrbApi() {
+  window.materializeOrb = materializeOrb;
+  window.dematerializeOrb = dematerializeOrb;
+  window._revealOrb = (id) => {
+    const seed = seedOrbs.find((orb) => orb.id === id);
+    return seed ? materializeOrb(seed) : null;
+  };
+}
+
+function escapeHtml(value) {
+  return String(value ?? "").replace(/[&<>"']/g, (char) => ({
+    "&": "&amp;",
+    "<": "&lt;",
+    ">": "&gt;",
+    "\"": "&quot;",
+    "'": "&#39;"
+  }[char]));
+}
+
+function clamp(value, min, max) {
+  return Math.min(max, Math.max(min, value));
 }
