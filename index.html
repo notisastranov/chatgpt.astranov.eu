@@ -1,0 +1,112 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta name="theme-color" content="#050510" />
+    <meta name="description" content="AstranoV ChatGPT command surface for collective intelligence." />
+    <title>AstranoV ChatGPT</title>
+    <link rel="stylesheet" href="./src/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <section class="orbital-grid" aria-hidden="true">
+        <span class="orbit orbit-one"></span>
+        <span class="orbit orbit-two"></span>
+        <span class="orbit orbit-three"></span>
+        <span class="scanline"></span>
+      </section>
+
+      <header class="topbar glass-panel">
+        <a class="brand-lockup" href="/chatgpt/" aria-label="AstranoV ChatGPT home">
+          <span class="brand-mark">◈</span>
+          <span>
+            <span class="system-label">ASTRANOV GLOBAL OPERATING SYSTEM</span>
+            <strong>ASTRANOV <em>AI</em></strong>
+          </span>
+        </a>
+        <nav aria-label="Primary navigation">
+          <a href="/">Discover</a>
+          <a href="/chatgpt/" aria-current="page">ChatGPT</a>
+          <a href="https://astranov.eu" rel="noreferrer">Origin</a>
+        </nav>
+      </header>
+
+      <section class="hero" aria-labelledby="page-title">
+        <section class="mission glass-panel">
+          <div class="mission-copy">
+            <span class="eyebrow">◈ Collective Intelligence</span>
+            <h1 id="page-title">ChatGPT command bridge for AstranoV.</h1>
+            <p>
+              A standalone /chatgpt UI that keeps the AstranoV cockpit language while routing commands to the
+              canonical Supabase Edge Function and preserving an offline local mission log.
+            </p>
+          </div>
+
+          <div class="planet-card" aria-label="AstranoV operations map preview">
+            <div class="planet-core">
+              <span class="continent continent-one"></span>
+              <span class="continent continent-two"></span>
+              <span class="continent continent-three"></span>
+              <span class="ping ping-one"></span>
+              <span class="ping ping-two"></span>
+              <span class="ping ping-three"></span>
+            </div>
+            <div class="map-hud top-left">GLOBAL<br /><strong>ONLINE</strong></div>
+            <div class="map-hud bottom-right">AI ROUTER<br /><strong>OPENAI-MINI</strong></div>
+          </div>
+        </section>
+
+        <aside class="status-stack" aria-label="Operations status">
+          <article class="glass-panel compact-card">
+            <span class="eyebrow">◉ Mode Manual</span>
+            <h2>Planet operations</h2>
+            <p>Zoom from global strategy to city action. Use the command bar to ask for products, services, routes, or dispatch plans.</p>
+            <button class="locate-button" id="locate-button" type="button">⊕ Locate mission</button>
+          </article>
+
+          <article class="glass-panel telemetry-card">
+            <span class="eyebrow">✦ Live telemetry</span>
+            <div class="telemetry-grid">
+              <div><span class="icon">⌁</span><span>Signal</span><strong id="signal-value">88%</strong></div>
+              <div><span class="icon">↯</span><span>Router</span><strong>Ready</strong></div>
+              <div><span class="icon">◌</span><span>Session</span><strong id="session-short">Local</strong></div>
+              <div><span class="icon">▣</span><span>History</span><strong id="message-count">1</strong></div>
+            </div>
+          </article>
+        </aside>
+
+        <section class="console glass-panel" aria-label="ChatGPT Agent Console">
+          <div class="console-header">
+            <div>
+              <span class="eyebrow"># Agent Console</span>
+              <h2>Ask AstranoV</h2>
+            </div>
+            <div class="connection-wrap">
+              <span class="connection booting" id="connection-status">◌ Connecting</span>
+              <span class="connection-detail" id="connection-detail">Preparing canonical ai-router</span>
+            </div>
+          </div>
+
+          <div class="message-list" id="message-list" aria-live="polite"></div>
+
+          <div class="quick-prompts" id="quick-prompts" aria-label="Quick prompts"></div>
+
+          <form class="composer" id="composer">
+            <span aria-hidden="true">⌘</span>
+            <input id="command-input" aria-label="Tell AstranoV what to do" placeholder="Tell AstranoV what to do" autocomplete="off" maxlength="1200" />
+            <span class="char-count" id="char-count">0</span>
+            <button type="submit" id="send-button" aria-label="Send command">↑</button>
+          </form>
+
+          <footer class="console-footer">
+            <span>Telemetry writes to <code>analytics_events</code>.</span>
+            <button type="button" id="clear-history">Clear local log</button>
+          </footer>
+        </section>
+      </section>
+    </main>
+    <script src="./config.js"></script>
+    <script type="module" src="./src/app.js"></script>
+  </body>
+</html>
