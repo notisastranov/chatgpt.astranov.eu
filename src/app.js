@@ -25,6 +25,10 @@ const els = {
   providerLock: document.getElementById("provider-lock"),
   modeLine: document.getElementById("mode-line"),
   memoryLine: document.getElementById("memory-line"),
+  sessionLine: document.getElementById("session-line"),
+  orbLine: document.getElementById("orb-line"),
+  export: document.getElementById("export-button"),
+  focus: document.getElementById("focus-button"),
   cic: document.getElementById("cic-float"),
   cicLabel: document.getElementById("cic-label"),
   back: document.getElementById("back-button"),
@@ -74,6 +78,7 @@ function boot() {
 
   renderMessages();
   updateStatus(api.isConfigured() ? "ROUTER READY" : "LOCAL FALLBACK");
+  updateTelemetry();
   autosize();
   bindEvents();
   exposeOrbApi();
@@ -100,9 +105,19 @@ function bindEvents() {
     const last = [...orbState.keys()].reverse().find((id) => id.startsWith("user-"));
     if (last) dematerializeOrb(last);
   });
+  els.export.addEventListener("click", exportTranscript);
+  els.focus.addEventListener("click", toggleFocusMode);
+  document.querySelectorAll("[data-prompt]").forEach((button) => {
+    button.addEventListener("click", () => useQuickPrompt(button.dataset.prompt || ""));
+  });
   document.addEventListener("change", onProviderChange);
   document.addEventListener("keydown", (event) => {
     if (event.key === "Escape") closeDrawer();
+    if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+      event.preventDefault();
+      openDrawer("chat", 0);
+      els.input.focus();
+    }
   });
   addBottomSwipe();
 }
@@ -156,6 +171,7 @@ function materializeOrb(input) {
 
   orbState.set(state.id, state);
   layoutOrbs();
+  updateTelemetry();
 
   if (input.ttl) {
     window.setTimeout(() => dematerializeOrb(state.id), input.ttl);
@@ -170,6 +186,7 @@ function dematerializeOrb(id) {
   state.element.style.scale = "0.7";
   window.setTimeout(() => state.element.remove(), 220);
   orbState.delete(id);
+  updateTelemetry();
 }
 
 function layoutOrbs() {
@@ -316,6 +333,7 @@ async function askRouter(prompt) {
     const meta = [result.provider || provider, result.model, result.latencyMs ? `${result.latencyMs}ms` : ""].filter(Boolean).join(" / ");
 
     addMessage({ role: "assistant", content: result.text, meta: meta || "router", action: result.action });
+    materializeInsightOrb(prompt, result.text);
     applyRouterAction(result.action);
     updateStatus("ROUTER RESPONSE");
   } catch (error) {
@@ -325,6 +343,28 @@ async function askRouter(prompt) {
     pending = false;
     setBusy(false);
   }
+}
+
+function useQuickPrompt(prompt) {
+  els.input.value = prompt;
+  autosize();
+  els.input.focus();
+  openDrawer("chat", 0);
+}
+
+function materializeInsightOrb(prompt, text) {
+  const source = `${prompt} ${text}`.toLowerCase();
+  const found = [
+    ["news", "News", "NW", "#ffd166"],
+    ["wallet", "Wallet", "AVC", "#6df2bd"],
+    ["pilot", "Pilot", "PL", "#8fb7ff"],
+    ["work", "Work", "WK", "#54e6ff"],
+    ["discover", "Discover", "DS", "#ff6b9a"]
+  ].find(([id, label]) => source.includes(id) || source.includes(label.toLowerCase()));
+
+  if (!found) return;
+  const [id, label, glyph, color] = found;
+  materializeOrb({ id, label, glyph, color, ring: id === "news" || id === "work" ? "outer" : "middle", panel: id === "pilot" ? "actions" : "chat", use: "hi" });
 }
 
 function maybeMaterializeFromPrompt(prompt) {
@@ -516,6 +556,40 @@ function setBusy(value) {
 
 function updateStatus(text) {
   els.status.textContent = text;
+  updateTelemetry();
+}
+
+function updateTelemetry() {
+  els.sessionLine.textContent = sessionId.slice(0, 8).toUpperCase();
+  els.orbLine.textContent = `${orbState.size} LIVE`;
+  els.memoryLine.textContent = storage.persistent ? "LOCAL" : "MEMORY";
+  els.modeLine.textContent = els.body.classList.contains("focus-mode") ? "FOCUS" : "ORBITAL";
+}
+
+function exportTranscript() {
+  const payload = {
+    app: config.appName || "AstranoV // ChatGPT",
+    exportedAt: new Date().toISOString(),
+    sessionId,
+    provider: getProvider(),
+    status: els.status.textContent,
+    orbs: [...orbState.keys()],
+    messages
+  };
+  const blob = new Blob([JSON.stringify(payload, null, 2)], { type: "application/json" });
+  const url = URL.createObjectURL(blob);
+  const anchor = document.createElement("a");
+  anchor.href = url;
+  anchor.download = `astranov-chatgpt-${new Date().toISOString().slice(0, 10)}.json`;
+  anchor.click();
+  URL.revokeObjectURL(url);
+  addMessage({ role: "assistant", content: "Transcript exported as a portable JSON signal pack.", meta: "manual affordance" });
+}
+
+function toggleFocusMode() {
+  els.body.classList.toggle("focus-mode");
+  els.focus.textContent = els.body.classList.contains("focus-mode") ? "Orb Mode" : "Focus Mode";
+  updateTelemetry();
 }
 
 function autosize() {
@@ -551,6 +625,7 @@ function createStorage(prefix) {
 
   const canUseLocalStorage = available();
   return {
+    persistent: canUseLocalStorage,
     get(name) {
       if (canUseLocalStorage) return window.localStorage.getItem(key(name));
       return memory.get(key(name)) || "";
