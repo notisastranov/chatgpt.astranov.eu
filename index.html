@@ -4,6 +4,7 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover">
     <meta name="theme-color" content="#02040a">
+    <meta name="color-scheme" content="dark">
     <meta
       name="description"
       content="AstranoV ChatGPT lab: an orb-first collective intelligence surface routed through the AstranoV brain."
@@ -59,6 +60,11 @@
         </div>
 
         <section class="drawer-section active" id="panel-chat" data-panel="chat">
+          <div class="quick-deck" aria-label="Suggested AstranoV prompts">
+            <button type="button" data-prompt="Map today's highest-signal news into useful orbs.">News orbit</button>
+            <button type="button" data-prompt="Plan a focused pilot route for the next step.">Pilot route</button>
+            <button type="button" data-prompt="Summarise wallet, work, and discovery priorities.">Priority scan</button>
+          </div>
           <div class="messages" id="messages" aria-live="polite"></div>
           <form class="composer" id="composer" autocomplete="off">
             <div class="mode-strip" aria-label="Provider lock">
@@ -91,6 +97,8 @@
             <article><span>Provider</span><strong id="provider-lock">OPENAI MINI</strong></article>
             <article><span>Mode</span><strong id="mode-line">SPARTAN</strong></article>
             <article><span>Memory</span><strong id="memory-line">LOCAL</strong></article>
+            <article><span>Session</span><strong id="session-line">NEW</strong></article>
+            <article><span>Orbs</span><strong id="orb-line">0 LIVE</strong></article>
           </div>
         </section>
 
@@ -100,6 +108,8 @@
             <button type="button" id="clear-button">Clear History</button>
             <button type="button" id="materialize-button">Materialise Orb</button>
             <button type="button" id="dematerialize-button">Dematerialise</button>
+            <button type="button" id="export-button">Export Transcript</button>
+            <button type="button" id="focus-button">Focus Mode</button>
           </div>
         </section>
       </aside>

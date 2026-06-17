@@ -710,3 +710,50 @@ textarea:disabled {
     transition-duration: 0.01ms !important;
   }
 }
+
+.quick-deck {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  padding: 14px 18px 0;
+}
+
+.quick-deck button {
+  border: 1px solid rgba(84, 230, 255, 0.24);
+  border-radius: 999px;
+  padding: 8px 11px;
+  color: rgba(226, 244, 255, 0.86);
+  background: rgba(84, 230, 255, 0.07);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 900;
+}
+
+.quick-deck button:hover,
+.quick-deck button:focus-visible {
+  border-color: rgba(109, 242, 189, 0.55);
+  background: rgba(109, 242, 189, 0.12);
+}
+
+.focus-mode .earth-system {
+  opacity: 0.2;
+  filter: blur(1px) saturate(0.82);
+}
+
+.focus-mode .orb,
+.focus-mode .orbit-ring,
+.focus-mode .tray-trigger,
+.focus-mode .cic {
+  opacity: 0.18;
+}
+
+.focus-mode .drawer {
+  max-height: min(88dvh, 880px);
+  background: rgba(3, 8, 18, 0.98);
+}
+
+@media (max-width: 760px) {
+  .quick-deck {
+    padding-inline: 14px;
+  }
+}
