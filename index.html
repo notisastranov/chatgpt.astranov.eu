@@ -10,6 +10,9 @@
       content="AstranoV ChatGPT lab: an orb-first collective intelligence surface routed through the AstranoV brain."
     >
     <title>AstranoV // ChatGPT</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@500&display=swap" rel="stylesheet">
     <link rel="preconnect" href="https://eoimages.gsfc.nasa.gov">
     <link rel="preconnect" href="https://svs.gsfc.nasa.gov">
     <link rel="stylesheet" href="./src/styles.css">
@@ -48,6 +51,11 @@
       </section>
 
       <button class="back-button" id="back-button" type="button" aria-label="Back">Back</button>
+
+      <button class="coders-trigger" id="coders-trigger" type="button" aria-label="Open AI coders hub" title="AI Coders — switch lab and continue the job">
+        <span class="coders-trigger-glyph">⬡</span>
+        <span class="coders-trigger-label">Coders</span>
+      </button>
 
       <button class="cic" id="cic-float" type="button" aria-label="Collective intelligence cycle">
         <span class="cic-node cic-a"></span>
@@ -119,6 +127,25 @@
             <button type="button" id="dematerialize-button">Dematerialise</button>
             <button type="button" id="export-button">Export Transcript</button>
             <button type="button" id="focus-button">Focus Mode</button>
+          </div>
+        </section>
+
+        <section class="drawer-section" id="panel-coders" data-panel="coders">
+          <div class="coders-hub">
+            <p class="coders-lead">Switch between AI coder labs on the same shared brain. Save your thread here, then open any lab to continue.</p>
+            <div class="coders-continuation" id="coders-continuation">
+              <div class="coders-continuation-head">
+                <span>Active job</span>
+                <span class="coders-continuation-meta" id="coders-job-meta">No saved job</span>
+              </div>
+              <p class="coders-continuation-text" id="coders-job-preview">Save the current thread to hand off to another coder lab.</p>
+              <div class="coders-continuation-actions">
+                <button type="button" class="coders-primary" id="coders-save-job">Save &amp; continue later</button>
+                <button type="button" class="coders-ghost" id="coders-resume-job">Resume saved job here</button>
+                <button type="button" class="coders-ghost" id="coders-clear-job">Clear job</button>
+              </div>
+            </div>
+            <div class="coders-grid" id="coders-grid" aria-label="AI coder labs"></div>
           </div>
         </section>
       </aside>
