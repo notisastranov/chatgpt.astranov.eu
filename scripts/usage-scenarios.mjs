@@ -96,7 +96,7 @@ const SCENARIOS = [
     name: "03 html shell — orb-first surface",
     run: async () => {
       const html = read("index.html");
-      for (const id of ["cosmos", "orb-layer", "drawer", "cic-float", "messages", "composer"]) {
+      for (const id of ["cosmos", "orb-layer", "drawer", "cic-float", "messages", "composer", "coders-trigger", "panel-coders", "coders-grid"]) {
         if (!html.includes(`id="${id}"`)) throw new Error(`missing #${id}`);
       }
       if (!html.includes("starfield-image") || !html.includes("svs.gsfc.nasa.gov")) {
@@ -105,17 +105,17 @@ const SCENARIOS = [
       for (const asset of ["./config.js", "./src/app.js", "./src/styles.css"]) {
         if (!html.includes(asset)) throw new Error(`index.html missing ${asset}`);
       }
-      return { dom: 6 };
+      return { dom: 9 };
     }
   },
   {
     name: "04 styles — orbital zero system",
     run: async () => {
       const css = read("src/styles.css");
-      for (const token of [".cosmos", ".orb", ".drawer", ".cic", ".earth-wrap", ".messages", ".starfield-image"]) {
+      for (const token of [".cosmos", ".orb", ".drawer", ".cic", ".earth-wrap", ".messages", ".starfield-image", ".coders-trigger", ".coders-hub"]) {
         if (!css.includes(token)) throw new Error(`styles missing ${token}`);
       }
-      return { tokens: 6 };
+      return { tokens: 8 };
     }
   },
   {
@@ -148,11 +148,16 @@ const SCENARIOS = [
         "cycleProvider",
         "exportTranscript",
         "toggleFocusMode",
-        "seedOrbs"
+        "seedOrbs",
+        "renderCodersHub",
+        "saveJobContinuation",
+        "openLab"
       ]) {
         if (!app.includes(token)) throw new Error(`app.js missing ${token}`);
       }
-      return { affordances: 6 };
+      const config = read("config.js");
+      if (!/labs:\s*\[/.test(config)) throw new Error("config.js must declare coder labs");
+      return { affordances: 9 };
     }
   },
   {
