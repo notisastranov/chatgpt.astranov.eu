@@ -1,1 +1,1 @@
-@file:C:/Users/N/Documents/New project/chatgpt-app/src/app.js
+@LOAD:C:/Users/N/.grok/task1-file1.js
