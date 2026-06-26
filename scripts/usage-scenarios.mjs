@@ -99,6 +99,9 @@ const SCENARIOS = [
       for (const id of ["cosmos", "orb-layer", "drawer", "cic-float", "messages", "composer"]) {
         if (!html.includes(`id="${id}"`)) throw new Error(`missing #${id}`);
       }
+      if (!html.includes("starfield-image") || !html.includes("svs.gsfc.nasa.gov")) {
+        throw new Error("index.html must use NASA Deep Star Maps imagery");
+      }
       for (const asset of ["./config.js", "./src/app.js", "./src/styles.css"]) {
         if (!html.includes(asset)) throw new Error(`index.html missing ${asset}`);
       }
@@ -109,7 +112,7 @@ const SCENARIOS = [
     name: "04 styles — orbital zero system",
     run: async () => {
       const css = read("src/styles.css");
-      for (const token of [".cosmos", ".orb", ".drawer", ".cic", ".earth-wrap", ".messages"]) {
+      for (const token of [".cosmos", ".orb", ".drawer", ".cic", ".earth-wrap", ".messages", ".starfield-image"]) {
         if (!css.includes(token)) throw new Error(`styles missing ${token}`);
       }
       return { tokens: 6 };
