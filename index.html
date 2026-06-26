@@ -11,6 +11,7 @@
     >
     <title>AstranoV // ChatGPT</title>
     <link rel="preconnect" href="https://eoimages.gsfc.nasa.gov">
+    <link rel="preconnect" href="https://svs.gsfc.nasa.gov">
     <link rel="stylesheet" href="./src/styles.css">
     <script src="./config.js"></script>
     <script type="module" src="./src/app.js"></script>
@@ -22,7 +23,15 @@
       </button>
 
       <section class="earth-system" aria-label="AstranoV orbital operating surface">
-        <div class="starfield" aria-hidden="true"></div>
+        <div class="starfield" aria-hidden="true">
+          <img
+            class="starfield-image"
+            src="https://svs.gsfc.nasa.gov/vis/a000000/a004800/a004851/starmap_2020_4k_print.jpg"
+            alt=""
+            decoding="async"
+            fetchpriority="high"
+          >
+        </div>
         <div class="earth-wrap" id="earth-wrap" aria-hidden="true">
           <img
             class="earth-image"
